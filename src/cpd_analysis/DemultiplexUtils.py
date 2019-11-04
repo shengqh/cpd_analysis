@@ -1,0 +1,47 @@
+import gzip
+
+def readFileMap(fileName):
+  result = {}
+  with open(fileName) as fh:
+    for line in fh:
+      filepath, name = line.strip().split('\t', 1)
+      result[name] = filepath.strip()
+  return(result)
+ 
+def demultiplex(inputFile, outputFilePrefix, configFile, args, logger):
+  sampleSeqMap = readFileMap(configFile)
+  seqSampleMap = {sampleSeqMap[k]:k for k in sampleSeqMap.keys()}
+  
+  print(seqSampleMap)
+  seqFileMap = {}
+  barcodeLength = 0
+  for seq in seqSampleMap.keys():
+    barcodeLength = len(seq)
+    seqFile = outputFilePrefix + "." + seqSampleMap[seq] + ".fastq.gz"
+    seqFileMap[seq] = gzip.open(seqFile, 'wt')
+  
+  logger.info("reading input file: " + inputFile + " ...")
+  with open(inputFile, "r") as fin:
+    while(True):
+      query = fin.readline()
+      if not query:
+        break
+      
+      seq = fin.readline()
+      skipline = fin.readline()
+      score = fin.readline()
+      
+      barcode = seq[0:barcodeLength]
+      if barcode in seqFileMap:
+        newseq = seq[barcodeLength:]
+        newscore = score[barcodeLength:]
+        fout = seqFileMap[barcode]
+        fout.write(query)
+        fout.write(newseq)
+        fout.write(skipline)
+        fout.write(newscore)
+        
+  for seq in seqFileMap.keys():
+    seqFileMap[seq].close()
+  
+  logger.info("demultiplex done.")
