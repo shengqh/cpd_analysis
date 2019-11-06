@@ -21,6 +21,7 @@ def demultiplex(inputFile, outputFilePrefix, configFile, args, logger):
     seqFileMap[seq] = gzip.open(seqFile, 'wt')
   
   logger.info("reading input file: " + inputFile + " ...")
+  count = 0
   with open(inputFile, "r") as fin:
     while(True):
       query = fin.readline()
@@ -31,6 +32,10 @@ def demultiplex(inputFile, outputFilePrefix, configFile, args, logger):
       skipline = fin.readline()
       score = fin.readline()
       
+      count = count + 1
+      if count % 100000 == 0:
+        logger.info("%d processed" % count)
+
       barcode = seq[0:barcodeLength]
       if barcode in seqFileMap:
         newseq = seq[barcodeLength:]
